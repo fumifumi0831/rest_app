@@ -12,21 +12,34 @@ export default function AuthProvider() {
   const pathname = usePathname()
 
   useEffect(() => {
+    // 初期セッションの取得
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
     }
     getSession()
-  }, [supabase])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
-  }
+    // セッションの変更を監視
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   // 認証ページでは何も表示しない
   if (pathname?.startsWith('/auth/')) {
     return null
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+    router.refresh()
   }
 
   return (
