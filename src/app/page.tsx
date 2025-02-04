@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import OpenAI from 'openai';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { getRemainingRequests } from '@/utils/api-limits';
 
 const REST_TYPES = [
@@ -34,14 +35,18 @@ export default function Home() {
   const [selectedDuration, setSelectedDuration] = useState<string>('');
   const [selectedSocial, setSelectedSocial] = useState<string>('');
   const [remainingRequests, setRemainingRequests] = useState<number | null>(null);
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
     const loadRemainingRequests = async () => {
-      const remaining = await getRemainingRequests();
-      setRemainingRequests(remaining);
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const remaining = await getRemainingRequests(session.user.id)
+        setRemainingRequests(remaining)
+      }
     }
     loadRemainingRequests()
-  }, [])
+  }, [supabase])
 
   const handleTypeToggle = (typeId: string) => {
     setSelectedTypes(prev => 

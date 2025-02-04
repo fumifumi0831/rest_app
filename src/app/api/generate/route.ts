@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 2. 詳細な説明（200-300文字）
 3. 期待される効果（箇条書き3つ）`
 
-    const response = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({
-      content: response.data.choices[0].message?.content,
+      content: completion.choices[0].message.content,
       remainingRequests,
     })
   } catch (error) {

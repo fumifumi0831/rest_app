@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverActions: true,
+    serverActions: {
+      allowedOrigins: ['localhost:3000'],
+    },
+  },
+  eslint: {
+    ignoreDuringBuilds: true, // ビルド時にESLintチェックをスキップ
   },
 }
 

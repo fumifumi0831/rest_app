@@ -1,11 +1,11 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Database } from '@/types/supabase'
+import { ApiLimit } from '@/types/api-limits'
 
 export async function checkAndUpdateApiLimit(userId: string): Promise<{
   canMakeRequest: boolean
   remainingRequests: number
 }> {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClientComponentClient()
 
   try {
     // 現在の制限を取得
@@ -34,23 +34,22 @@ export async function checkAndUpdateApiLimit(userId: string): Promise<{
       .single()
 
     if (updateError) throw updateError
+    if (!updatedLimits) throw new Error('Failed to get updated limits')
 
-    const canMakeRequest = updatedLimits.requests_count < updatedLimits.daily_limit
+    const limit = updatedLimits as ApiLimit
+    const canMakeRequest = limit.requests_count < limit.daily_limit
 
     if (canMakeRequest) {
       // リクエストカウントを増やす
       await supabase
         .from('api_limits')
-        .update({ requests_count: updatedLimits.requests_count + 1 })
+        .update({ requests_count: limit.requests_count + 1 })
         .eq('user_id', userId)
     }
 
     return {
       canMakeRequest,
-      remainingRequests: Math.max(
-        0,
-        updatedLimits.daily_limit - updatedLimits.requests_count
-      ),
+      remainingRequests: Math.max(0, limit.daily_limit - limit.requests_count),
     }
   } catch (error) {
     console.error('Error checking API limits:', error)
@@ -59,7 +58,7 @@ export async function checkAndUpdateApiLimit(userId: string): Promise<{
 }
 
 export async function getRemainingRequests(userId: string): Promise<number> {
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClientComponentClient()
 
   try {
     const { data: limits, error } = await supabase
@@ -69,8 +68,10 @@ export async function getRemainingRequests(userId: string): Promise<number> {
       .single()
 
     if (error) throw error
+    if (!limits) return 0
 
-    return Math.max(0, limits.daily_limit - limits.requests_count)
+    const limit = limits as ApiLimit
+    return Math.max(0, limit.daily_limit - limit.requests_count)
   } catch (error) {
     console.error('Error getting remaining requests:', error)
     return 0
