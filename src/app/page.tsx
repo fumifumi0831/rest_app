@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import OpenAI from 'openai';
+import { getRemainingRequests } from '@/utils/api-limits';
 
 const REST_TYPES = [
   { id: 'sleep', name: '睡眠' },
@@ -32,6 +33,15 @@ export default function Home() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDuration, setSelectedDuration] = useState<string>('');
   const [selectedSocial, setSelectedSocial] = useState<string>('');
+  const [remainingRequests, setRemainingRequests] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadRemainingRequests = async () => {
+      const remaining = await getRemainingRequests();
+      setRemainingRequests(remaining);
+    }
+    loadRemainingRequests()
+  }, [])
 
   const handleTypeToggle = (typeId: string) => {
     setSelectedTypes(prev => 
@@ -174,9 +184,9 @@ export default function Home() {
         <div className="mt-8">
           <button
             onClick={getSuggestions}
-            disabled={loading}
+            disabled={loading || remainingRequests === 0}
             className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-              loading
+              loading || remainingRequests === 0
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-indigo-600 hover:bg-indigo-700'
             }`}
@@ -184,6 +194,11 @@ export default function Home() {
             {loading ? '提案を生成中...' : '休養プランを提案する'}
           </button>
         </div>
+        {remainingRequests !== null && (
+          <p className="mt-2 text-sm text-gray-600">
+            本日の残りリクエスト回数: {remainingRequests}回
+          </p>
+        )}
       </div>
 
       {suggestions && (
