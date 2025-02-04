@@ -1,13 +1,12 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { Configuration, OpenAIApi } from 'openai'
+import OpenAI from 'openai'
 import { checkAndUpdateApiLimit } from '@/utils/api-limits'
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
 })
-const openai = new OpenAIApi(configuration)
 
 export async function POST(req: Request) {
   try {
