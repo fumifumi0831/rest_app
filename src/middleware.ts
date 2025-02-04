@@ -10,15 +10,20 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // ログインページにいる場合は、既にログインしていればホームページにリダイレクト
-  if (req.nextUrl.pathname === '/auth/login') {
-    if (session) {
+  // 認証不要のパス
+  const publicPaths = ['/auth/login', '/auth/send-email', '/auth/reset-password']
+  const isPublicPath = publicPaths.includes(req.nextUrl.pathname)
+
+  // 認証不要のページにいる場合
+  if (isPublicPath) {
+    // ログイン済みの場合はホームページにリダイレクト（ログインページの場合のみ）
+    if (session && req.nextUrl.pathname === '/auth/login') {
       return NextResponse.redirect(new URL('/', req.url))
     }
     return res
   }
 
-  // ログインページ以外にいる場合は、ログインしていなければログインページにリダイレクト
+  // 認証が必要なページで未ログインの場合はログインページにリダイレクト
   if (!session) {
     return NextResponse.redirect(new URL('/auth/login', req.url))
   }

@@ -1,176 +1,242 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
-import { FatigueRecord, RestRecord } from '@/types'
+import { useState } from 'react';
+import OpenAI from 'openai';
+
+const REST_TYPES = [
+  { id: 'sleep', name: '睡眠' },
+  { id: 'nap', name: '昼寝' },
+  { id: 'meditation', name: '瞑想' },
+  { id: 'relaxation', name: 'リラックス' },
+  { id: 'exercise', name: '軽い運動' },
+  { id: 'reading', name: '読書' },
+  { id: 'nature', name: '自然との触れ合い' }
+];
+
+const DURATIONS = [
+  { id: '15', name: '15分' },
+  { id: '30', name: '30分' },
+  { id: '60', name: '60分' },
+  { id: 'half_day', name: '半日' },
+  { id: 'full_day', name: '1日' }
+];
+
+const SOCIAL_PREFERENCES = [
+  { id: 'alone', name: '一人で過ごす' },
+  { id: 'with_others', name: '誰かと過ごす' }
+];
 
 export default function Home() {
-  const router = useRouter()
-  const supabase = createClientComponentClient()
-  const [fatigueLevel, setFatigueLevel] = useState<number>(3)
-  const [mood, setMood] = useState<string>('')
-  const [restType, setRestType] = useState<string>('')
-  const [activity, setActivity] = useState<string>('')
-  const [satisfactionLevel, setSatisfactionLevel] = useState<number>(3)
-  const [feedback, setFeedback] = useState<string>('')
-  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedDuration, setSelectedDuration] = useState<string>('');
+  const [selectedSocial, setSelectedSocial] = useState<string>('');
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error || !session) {
-        router.push('/auth/login')
-        return
-      }
-      setUser(session.user)
+  const handleTypeToggle = (typeId: string) => {
+    setSelectedTypes(prev => 
+      prev.includes(typeId) 
+        ? prev.filter(t => t !== typeId)
+        : [...prev, typeId]
+    );
+  };
+
+  const getSuggestions = async () => {
+    if (selectedTypes.length === 0) {
+      alert('休養の種類を1つ以上選択してください');
+      return;
     }
 
-    getUser()
-  }, [supabase, router])
-
-  const recordFatigue = async () => {
-    if (!user) return
-
-    const { error } = await supabase
-      .from('fatigue_records')
-      .insert([
-        {
-          user_id: user.id,
-          fatigue_level: fatigueLevel,
-          mood: mood,
-        },
-      ])
-
-    if (error) {
-      console.error('Error recording fatigue:', error)
-      return
+    if (!selectedDuration) {
+      alert('所要時間を選択してください');
+      return;
     }
 
-    alert('疲労記録を保存しました')
-    setMood('')
-  }
-
-  const recordRest = async () => {
-    if (!user) return
-
-    const { error } = await supabase
-      .from('rest_records')
-      .insert([
-        {
-          user_id: user.id,
-          rest_type: restType,
-          activity: activity,
-          satisfaction_level: satisfactionLevel,
-          feedback: feedback,
-        },
-      ])
-
-    if (error) {
-      console.error('Error recording rest:', error)
-      return
+    if (!selectedSocial) {
+      alert('過ごし方を選択してください');
+      return;
     }
 
-    alert('休養記録を保存しました')
-    setActivity('')
-    setFeedback('')
-  }
+    setLoading(true);
+    try {
+      const openai = new OpenAI({
+        apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+        dangerouslyAllowBrowser: true
+      });
 
-  if (!user) {
-    return null // ログインページにリダイレクトされるまで何も表示しない
-  }
+      const selectedTypeNames = selectedTypes
+        .map(id => REST_TYPES.find(t => t.id === id)?.name)
+        .filter(Boolean)
+        .join('、');
+
+      const durationName = DURATIONS.find(d => d.id === selectedDuration)?.name;
+      const socialPreference = SOCIAL_PREFERENCES.find(s => s.id === selectedSocial)?.name;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "あなたは休養アドバイザーです。選択された条件に基づいて、具体的で実践的な休養プランを提案してください。"
+          },
+          {
+            role: "user",
+            content: `以下の条件で休養プランを提案してください：
+            
+            休養の種類：${selectedTypeNames}
+            所要時間：${durationName}
+            過ごし方：${socialPreference}
+            
+            提案には以下を含めてください：
+            1. 選択された時間内での具体的な時間配分
+            2. アクティビティの実施順序
+            3. 期待される効果
+            4. 実践する際のポイント
+            
+            箇条書きで読みやすく提案してください。また、選択された過ごし方（${socialPreference}）に適した提案内容にしてください。`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000
+      });
+
+      setSuggestions(completion.choices[0].message.content || '');
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      setSuggestions('申し訳ありません。提案の取得中にエラーが発生しました。');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="p-6 bg-white rounded-lg shadow-lg border border-gray-200">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">疲労記録</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block mb-2">疲労レベル (1-5)</label>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={fatigueLevel}
-                onChange={(e) => setFatigueLevel(Number(e.target.value))}
-                className="w-full"
-              />
-              <div className="text-center">{fatigueLevel}</div>
+    <main className="min-h-screen p-8 max-w-4xl mx-auto">
+      <div className="bg-white p-6 rounded-lg shadow mb-8">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold mb-4">組み合わせたい休養を選択してください</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {REST_TYPES.map(type => (
+                <button
+                  key={type.id}
+                  onClick={() => handleTypeToggle(type.id)}
+                  className={`p-3 rounded-lg border transition-all ${
+                    selectedTypes.includes(type.id)
+                      ? 'bg-indigo-100 border-indigo-500 text-indigo-700 shadow-sm'
+                      : 'border-gray-300 hover:border-indigo-500 hover:shadow-sm'
+                  }`}
+                >
+                  {type.name}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="block mb-2">気分</label>
-              <input
-                type="text"
-                value={mood}
-                onChange={(e) => setMood(e.target.value)}
-                className="w-full border p-2 rounded"
-              />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-4">所要時間を選択してください</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {DURATIONS.map(duration => (
+                <button
+                  key={duration.id}
+                  onClick={() => setSelectedDuration(duration.id)}
+                  className={`p-3 rounded-lg border transition-all ${
+                    selectedDuration === duration.id
+                      ? 'bg-indigo-100 border-indigo-500 text-indigo-700 shadow-sm'
+                      : 'border-gray-300 hover:border-indigo-500 hover:shadow-sm'
+                  }`}
+                >
+                  {duration.name}
+                </button>
+              ))}
             </div>
-            <button
-              onClick={recordFatigue}
-              className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-            >
-              記録する
-            </button>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-4">過ごし方を選択してください</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {SOCIAL_PREFERENCES.map(pref => (
+                <button
+                  key={pref.id}
+                  onClick={() => setSelectedSocial(pref.id)}
+                  className={`p-3 rounded-lg border transition-all ${
+                    selectedSocial === pref.id
+                      ? 'bg-indigo-100 border-indigo-500 text-indigo-700 shadow-sm'
+                      : 'border-gray-300 hover:border-indigo-500 hover:shadow-sm'
+                  }`}
+                >
+                  {pref.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-
-        <div className="p-6 bg-white rounded-lg shadow-lg border border-gray-200">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">休養記録</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block mb-2">休養タイプ</label>
-              <select
-                value={restType}
-                onChange={(e) => setRestType(e.target.value)}
-                className="w-full border p-2 rounded"
-              >
-                <option value="">選択してください</option>
-                <option value="運動">運動</option>
-                <option value="栄養">栄養</option>
-                <option value="造形">造形</option>
-              </select>
-            </div>
-            <div>
-              <label className="block mb-2">活動内容</label>
-              <input
-                type="text"
-                value={activity}
-                onChange={(e) => setActivity(e.target.value)}
-                className="w-full border p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="block mb-2">満足度 (1-5)</label>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={satisfactionLevel}
-                onChange={(e) => setSatisfactionLevel(Number(e.target.value))}
-                className="w-full"
-              />
-              <div className="text-center">{satisfactionLevel}</div>
-            </div>
-            <div>
-              <label className="block mb-2">フィードバック</label>
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                className="w-full border p-2 rounded"
-                rows={3}
-              />
-            </div>
-            <button
-              onClick={recordRest}
-              className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
-            >
-              記録する
-            </button>
-          </div>
+        
+        <div className="mt-8">
+          <button
+            onClick={getSuggestions}
+            disabled={loading}
+            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
+              loading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
+          >
+            {loading ? '提案を生成中...' : '休養プランを提案する'}
+          </button>
         </div>
       </div>
+
+      {suggestions && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-6">あなたへのおすすめ休養プラン</h2>
+          <div className="prose prose-indigo max-w-none">
+            {suggestions.split('\n').map((line, index) => {
+              // 見出し（###）の処理
+              if (line.startsWith('###')) {
+                return (
+                  <h3 key={index} className="text-lg font-semibold mt-6 mb-4">
+                    {line.replace('###', '').trim()}
+                  </h3>
+                );
+              }
+              // 小見出し（**）の処理
+              if (line.trim().startsWith('**') && line.trim().endsWith('**')) {
+                return (
+                  <h4 key={index} className="font-medium text-gray-900 mt-4 mb-2">
+                    {line.replace(/\*\*/g, '').trim()}
+                  </h4>
+                );
+              }
+              // リスト項目の処理
+              if (line.trim().startsWith('-')) {
+                return (
+                  <li key={index} className="ml-6 mb-1 text-gray-600">
+                    {line.substring(1).trim()}
+                  </li>
+                );
+              }
+              // 数字付きリスト項目の処理
+              if (/^\d+\./.test(line.trim())) {
+                return (
+                  <div key={index} className="ml-6 mb-4">
+                    <strong className="text-gray-900">{line.trim()}</strong>
+                  </div>
+                );
+              }
+              // 空行の処理
+              if (line.trim() === '') {
+                return <div key={index} className="h-4" />;
+              }
+              // その他の通常のテキスト
+              return (
+                <p key={index} className="mb-2 text-gray-600">
+                  {line}
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </main>
-  )
+  );
 }

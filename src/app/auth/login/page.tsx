@@ -67,19 +67,31 @@ export default function Login() {
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-4">
-            <button
-              onClick={handleSignIn}
-              className="flex-1 rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4">
+              <button
+                onClick={handleSignIn}
+                className="flex-1 rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                ログイン
+              </button>
+              <button
+                onClick={handleSignUp}
+                className="flex-1 rounded-md bg-green-500 px-4 py-2 text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              >
+                新規登録
+              </button>
+            </div>
+            <a
+              href="/auth/send-email"
+              className="text-center text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault()
+                window.location.href = '/auth/send-email'
+              }}
             >
-              ログイン
-            </button>
-            <button
-              onClick={handleSignUp}
-              className="flex-1 rounded-md bg-green-500 px-4 py-2 text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-            >
-              新規登録
-            </button>
+              パスワードをお忘れの方はこちら
+            </a>
           </div>
         </div>
       </div>
