@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# rest_app
 
-## Getting Started
+このリポジトリは、Next.js で構築された REST API アプリケーションです。
 
-First, run the development server:
+## 概要
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+このアプリケーションは、以下の機能を備えています。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*   **API エンドポイント:** `src/app/api` ディレクトリに API エンドポイントが実装されています。
+*   **認証機能:** `src/app/auth` ディレクトリに認証機能が実装されています。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 技術スタック
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   Next.js
+*   TypeScript
+*   その他、`package.json` を参照してください。
 
-## Learn More
+## 開発環境
 
-To learn more about Next.js, take a look at the following resources:
+*   Node.js
+*   npm または yarn
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 実行方法
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1.  リポジトリをクローンします。
+    ```bash
+    git clone https://github.com/fumifumi0831/rest_app.git
+    ```
+2.  依存関係をインストールします。
+    ```bash
+    npm install
+    ```
+3.  開発サーバーを起動します。
+    ```bash
+    npm run dev
+    ```
 
-## Deploy on Vercel
+## その他
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+詳細な情報は、各ディレクトリの README.md を参照してください。
