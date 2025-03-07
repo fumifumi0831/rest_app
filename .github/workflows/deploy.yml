@@ -3,10 +3,10 @@ name: Deploy to Vercel
 on:
   push:
     branches:
-      - main  # メインブランチへのプッシュ時に実行
+      - rest_app  # メインブランチへのプッシュ時に実行
   pull_request:
     branches:
-      - main  # プルリクエスト時にもプレビューデプロイを実行
+      - rest_app  # プルリクエスト時にもプレビューデプロイを実行
 
 jobs:
   deploy:
