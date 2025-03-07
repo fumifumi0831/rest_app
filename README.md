@@ -1,6 +1,6 @@
 # rest_app
 
-このリポジトリは、Next.js で構築された REST API アプリケーションです。
+このリポジトリは、Next.js で構築された REST API アプリケーションです。githubアクションによりvercelにも自動でデプロイを実施することが可能です
 
 ## 概要
 
